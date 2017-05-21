@@ -1,0 +1,6 @@
+Charan Lellaboyena - 111218815
+Abhishek S Yellanki - 111095603
+
+All tasks completed.
+- Our design works correctly if the W-ROM is [M*N:0] instead of [M*N-1:0]. We are unable to find the bug. 
+  Can you please help us with that? For now, we have implemented a (M*N + 1) size W-ROM.

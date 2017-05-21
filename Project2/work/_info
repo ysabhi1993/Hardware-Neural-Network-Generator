@@ -1,0 +1,146 @@
+m255
+K4
+z2
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+Z0 dF:/Advanced_digital_system_design/Project2
+vData_path
+Z1 DXx6 sv_std 3 std 0 22 WmjPaeP=7F5?QFXzJ>D[Q2
+Z2 !s110 1477854582
+!i10b 1
+!s100 WC24`68TK39<3MC]^WK6B0
+IUlJLLDHkPVYKnD_aYQ^LN0
+Z3 VDg1SIo80bB@j0V0VzS_@n1
+Z4 !s105 Datapath_sv_unit
+S1
+R0
+Z5 w1477854559
+Z6 8Datapath.sv
+Z7 FDatapath.sv
+L0 1
+Z8 OV;L;10.4d;61
+r1
+!s85 0
+31
+Z9 !s108 1477854582.000000
+Z10 !s107 Datapath.sv|
+Z11 !s90 -reportprogress|300|Datapath.sv|
+!i113 1
+n@data_path
+vMac
+R1
+!s110 1477854585
+!i10b 1
+!s100 iVjDCeAD3LGOh9[=eeeiM0
+I6oUSU>zl9f89]oK3a_il03
+R3
+Z12 !s105 MAC_sv_unit
+S1
+R0
+w1477854544
+Z13 8MAC.sv
+Z14 FMAC.sv
+L0 1
+R8
+r1
+!s85 0
+31
+!s108 1477854585.000000
+!s107 MAC.sv|
+Z15 !s90 -reportprogress|300|MAC.sv|
+!i113 1
+n@mac
+vmemory_M
+R1
+R2
+!i10b 1
+!s100 aTFm@STJa=EcO^FZiYKFN2
+I@G9TJfOMIk<1bfg=cBY[f0
+R3
+R4
+S1
+R0
+R5
+R6
+R7
+L0 18
+R8
+r1
+!s85 0
+31
+R9
+R10
+R11
+!i113 1
+nmemory_@m
+vmemory_X
+R1
+R2
+!i10b 1
+!s100 lfeg;ih4NTMg3DBW^6^?b1
+IcN5F8?n9dgzK6b4OM`[bj1
+R3
+R4
+S1
+R0
+R5
+R6
+R7
+L0 35
+R8
+r1
+!s85 0
+31
+R9
+R10
+R11
+!i113 1
+nmemory_@x
+vpart2_datapath
+R1
+!s110 1477854244
+!i10b 1
+!s100 ;Lfm1]aUA_?5Vc?MZcdj32
+IOG?CfDRGkcKRom8j01?VZ0
+R3
+R4
+S1
+R0
+w1477854243
+R6
+R7
+L0 1
+R8
+r1
+!s85 0
+31
+!s108 1477854244.000000
+R10
+R11
+!i113 1
+vpart2_mac
+R1
+!s110 1477854325
+!i10b 1
+!s100 o3NHk[EgPWNCE`1]Z]P=i3
+I=oz8kPfA?:AB02YAm[Z?X1
+R3
+R12
+S1
+R0
+w1477852674
+R13
+R14
+L0 1
+R8
+r1
+!s85 0
+31
+!s108 1477854325.000000
+!s107 MAC.sv|
+R15
+!i113 1

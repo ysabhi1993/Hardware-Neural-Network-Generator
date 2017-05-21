@@ -1,0 +1,10 @@
+#!/usr/bin/bash
+
+# ./testmode2 N M1 M2 M3 MULTS T
+
+rm -rf work
+vlib work
+./testgen 2 $1 $2 $3 $4 $5 $6 
+./gen 2 $1 $2 $3 $4 $5 $6 const_$1_$2_$3_$4_$5_$6.txt 
+vlog network_$1_$2_$3_$4_$5_$6.sv tb_network_$1_$2_$3_$4_$5_$6.sv 
+vsim -c tb_network_$1_$2_$3_$4_$5_$6 -do "run -all;quit"

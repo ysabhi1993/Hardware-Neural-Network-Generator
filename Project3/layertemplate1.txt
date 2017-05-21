@@ -1,0 +1,254 @@
+ os << "//Top level module for connecting control module and datapath module " << endl
+ os << "module <MODULE_NAME>(clk, reset, s_valid, m_ready, data_in, m_valid, s_ready, data_out); " << endl
+os << " 	 " << endl
+	 os << "parameter T=<VALUE_OF_T>, M=<VALUE_OF_M>, N=<VALUE_OF_N>, AB_W=<BITS_FOR_W>, AB_X=<BITS_FOR_X>, AB_B=<BITS_FOR_B>; " << endl
+	 os << "input clk, reset, s_valid, m_ready; " << endl
+	 os << "input [T-1:0] data_in; " << endl
+	 os << "output logic signed [T-1:0] data_out; " << endl
+	 os << "output logic m_valid, s_ready; " << endl
+os << " 	 " << endl
+	 os << "logic [AB_W:0] addr_w; " << endl
+	 os << "logic [AB_X:0] addr_x; " << endl
+	 os << "logic [AB_B:0] addr_b; " << endl
+os << "	  " << endl
+	 os << "logic wr_en_x, clear_acc, accum_src, en, en_pp; " << endl
+os << " 	 " << endl
+	 os << "control #(T, M, N, AB_W, AB_X, AB_B) control_1(.clk(clk), .reset(reset), .s_valid(s_valid), .m_ready(m_ready), .addr_w(addr_w), .addr_x(addr_x), .wr_en_x(wr_en_x), .addr_b(addr_b), .s_ready(s_ready), .m_valid(m_valid), .clear_acc(clear_acc), .en(en), .en_pp(en_pp), .accum_src(accum_src)); " << endl
+os << " 	 " << endl
+	 os << "datapath #(T, M, N, AB_W, AB_X, AB_B) datapath_1(.clk(clk), .reset(reset), .addr_w(addr_w), .addr_x(addr_x), .wr_en_x(wr_en_x), .addr_b(addr_b), .accum_src(accum_src), .clear_acc(clear_acc), .en(en), .en_pp(en_pp), .data_in(data_in), .data_out(data_out)); " << endl
+os << " 	 " << endl
+ os << "endmodule " << endl
+os << "  " << endl
+ os << "//Control module for regulating memory and MAC " << endl
+ os << "module control(clk, reset, s_valid, m_ready, addr_w, addr_x, wr_en_x, addr_b, s_ready, m_valid, clear_acc, en, en_pp, accum_src); " << endl
+os << "  " << endl
+ os << "parameter T=<VALUE_OF_T>, M=<VALUE_OF_M>, N=<VALUE_OF_N>, AB_W=<BITS_FOR_W>, AB_X=<BITS_FOR_X>, AB_B=<BITS_FOR_B>; " << endl
+	 os << "parameter MAX_ADDR_W=M*N, MAX_ADDR_X=N, MAX_ADDR_B=M; " << endl
+os << " 	 " << endl
+	 os << "input clk, reset, s_valid, m_ready; " << endl
+	 os << "output logic wr_en_x, s_ready, m_valid, clear_acc, en, en_pp, accum_src; " << endl
+	 os << "output logic [AB_B:0] addr_b;	//Reserving AB_B bits for addr_b as it goes from 0- 2^AB_B " << endl
+	 os << "output logic [AB_X:0] addr_x;	//Reserving AB_X bits for addr_b as it goes from 0- 2^AB_X " << endl
+	 os << "output logic [AB_W:0] addr_w;	//Reserving AB_W bits for addr_w as it goes from 0- 2^AB_W " << endl
+os << " 	 " << endl
+os << " 	 " << endl
+	 os << "//Internal variable to track next state " << endl
+	 os << "logic [2:0]	next_state; " << endl
+os << " 	 " << endl
+	 os << "//Bit to mark matrix multiplication as complete " << endl
+	 os << "logic cycle_complete; " << endl
+os << " 	 " << endl
+	 os << "//State diagram description- " << endl
+	 os << "//(S0)Initialize: Initial state to reset state machine's values " << endl
+	 os << "//(S1)Fill_X: Fill values of vector X " << endl
+	 os << "//(S2)Call_MAC: State to perform MAC of one row of matrix M with a column of matrix X " << endl
+	 os << "//(S3)Stall_Cycle: Stall one cycle for pipelining to complete " << endl
+	 os << "//(S4)Compute_Sum: State to add result of MAC to vector B " << endl
+	 os << "//(S5)Output: State to mark output as valid and loop back to Initial state " << endl
+	 os << "parameter [2:0] Initialize = 3'b000, Fill_X=3'b001, Call_MAC = 3'b010, Stall_Cycle = 3'b011, Compute_Sum = 3'b100, Output = 3'b101; " << endl
+os << " 	 " << endl
+	 os << "always_comb begin " << endl
+		 os << "//Let the datapath know that data-in is valid for taking into memory X " << endl
+		 os << "if(s_valid==1 && s_ready==1 && next_state==Fill_X) " << endl
+			 os << "wr_en_x=1; " << endl
+		 os << "else " << endl
+			 os << "wr_en_x=0;		 " << endl
+	 os << "end " << endl
+os << " 	 " << endl
+	 os << "always_ff@(posedge clk) begin " << endl
+os << " 		 " << endl
+		 os << "//Reset all signals to zero(except clear_acc which will reset the accumulator) " << endl
+		 os << "//Set the first state to Initialize " << endl
+		 os << "if(reset==1) begin " << endl
+			 os << "addr_w<=0; " << endl
+			 os << "addr_x<=0; " << endl
+			 os << "addr_b<=0; " << endl
+			 os << "s_ready<=0; " << endl
+			 os << "m_valid<=0; " << endl
+			 os << "clear_acc<=1; " << endl
+			 os << "accum_src<=0; " << endl
+			 os << "en<=0; " << endl
+			 os << "en_pp<=0; " << endl
+			 os << "cycle_complete<=0; " << endl
+			 os << "next_state<=Initialize; " << endl
+		 os << "end " << endl
+os << " 		 " << endl
+		 os << "case(next_state) " << endl
+			 os << "//Reset all signals to zero in the beginning and set the next state to Fill_M " << endl
+			 os << "Initialize: begin " << endl
+				 os << "addr_w<=0; " << endl
+				 os << "addr_x<=0; " << endl
+				 os << "addr_b<=0; " << endl
+				 os << "s_ready<=0; " << endl
+				 os << "m_valid<=0; " << endl
+				 os << "clear_acc<=1; " << endl
+				 os << "accum_src<=0; " << endl
+				 os << "en<=0; " << endl
+				 os << "en_pp<=0; " << endl
+				 os << "cycle_complete<=0; " << endl
+				 os << "next_state<=Fill_X; " << endl
+			 os << "end			 " << endl
+os << " 			 " << endl
+			 os << "Fill_X: begin					 " << endl
+				 os << "s_ready<=1; " << endl
+				 os << "if(wr_en_x==1) begin " << endl
+					 os << "//Increment Address(It will kick in the next clock cycle)  " << endl
+					 os << "addr_x<=addr_x+1; " << endl
+os << " 					 " << endl
+					 os << "//Stay in same state as long as counter doesn't touch 3 " << endl
+					 os << "if(addr_x==MAX_ADDR_X-1) begin " << endl
+						 os << "next_state<=Call_MAC; " << endl
+						 os << "addr_x<=0; " << endl
+						 os << "s_ready<=0; " << endl
+					 os << "end " << endl
+				 os << "end		 " << endl
+			 os << "end " << endl
+						  os << "" << endl
+			 os << "//Multiply a row of Matrix M with vector X. Allow output to propagate in MAC. " << endl
+			 os << "Call_MAC: begin " << endl
+				 os << "en<=1; " << endl
+				 os << "en_pp<=1; " << endl
+				 os << "clear_acc<=0; " << endl
+os << " 				 " << endl
+				 os << "//Marks completion of one row " << endl
+				 os << "if(addr_x>=MAX_ADDR_X-1) begin " << endl
+					 os << "next_state<=Stall_Cycle; " << endl
+					 os << "addr_x<=0; " << endl
+					 os << "addr_w<=addr_w+1;					 " << endl
+				 os << "end " << endl
+os << " 				 " << endl
+				 os << "//Marks completion of the entire matrix " << endl
+				 os << "if(addr_w>=MAX_ADDR_W-1) " << endl
+					 os << "cycle_complete<=1; " << endl
+os << " 					 " << endl
+				 os << "else begin " << endl
+					 os << "addr_x<=addr_x+1; " << endl
+					 os << "addr_w<=addr_w+1; " << endl
+				 os << "end " << endl
+			 os << "end " << endl
+os << " 			 " << endl
+			 os << "Stall_Cycle: begin " << endl
+				 os << "next_state<=Compute_Sum; " << endl
+				 os << "en_pp<=1; " << endl
+			 os << "end " << endl
+os << " 			 " << endl
+			 os << "//Computes sum of MAC output and Memory b value " << endl
+			 os << "Compute_Sum: begin " << endl
+				 os << "en_pp<=1; " << endl
+				 os << "accum_src<=1; " << endl
+				 os << "addr_b<=addr_b+1; " << endl
+				 os << "next_state<=Output; " << endl
+			 os << "end " << endl
+os << " 			 " << endl
+			 os << "//Mark output as valid if one row is completed. Move on to next row. " << endl
+			 os << "Output: begin " << endl
+				 os << "accum_src<=0; " << endl
+				 os << "m_valid<=1; " << endl
+				 os << "en<=0; " << endl
+				 os << "en_pp<=0;					 " << endl
+				 os << "if(m_ready==1 && m_valid==1) begin " << endl
+					 os << "clear_acc<=1; " << endl
+					 os << "m_valid<=0; " << endl
+					 os << "if(cycle_complete==1) begin " << endl
+						 os << "next_state<=Initialize; " << endl
+						 os << "cycle_complete<=0; " << endl
+						 os << "addr_w<=0; " << endl
+					 os << "end " << endl
+					 os << "else " << endl
+						 os << "next_state<=Call_MAC; " << endl
+				 os << "end " << endl
+			 os << "end " << endl
+		 os << "endcase " << endl
+	 os << "end " << endl
+ os << "endmodule " << endl
+os << "  " << endl
+ os << "//Datapath module for connecting memory and MAC " << endl
+ os << "module datapath(clk, reset, addr_w, addr_x, wr_en_x, addr_b, accum_src, clear_acc, data_in, en, en_pp, data_out); " << endl
+os << "  " << endl
+ os << "parameter T=<VALUE_OF_T>, M=<VALUE_OF_M>, N=<VALUE_OF_N>, AB_W=<BITS_FOR_W>, AB_X=<BITS_FOR_X>, AB_B=<BITS_FOR_B>; " << endl
+	 os << "parameter MAX_ADDR_W=M*N, MAX_ADDR_X=N, MAX_ADDR_B=M; " << endl
+os << " 	 " << endl
+	 os << "input clk, reset, wr_en_x, clear_acc, accum_src; " << endl
+	 os << "input [AB_X:0] addr_x; " << endl
+	 os << "input [AB_B:0] addr_b;	 " << endl
+	 os << "input [AB_W:0] addr_w; " << endl
+	 os << "input [T-1:0] data_in; " << endl
+	 os << "input en, en_pp; " << endl
+	 os << "output logic signed [T-1:0] data_out; " << endl
+	 os << "logic signed [T-1:0] w_out, x_out; " << endl
+	 os << "logic [T-1:0] b_out; " << endl
+	 os << "logic signed [T-1:0] f_out; " << endl
+os << " 	 " << endl
+	 os << "<W_ROM_NAME> rom_w(.clk(clk), .addr(addr_w), .z(w_out)); " << endl
+os << " 	 " << endl
+	 os << "memory #(T, MAX_ADDR_X, AB_X+1) memory_for_x(.clk(clk), .data_in(data_in), .data_out(x_out), .addr(addr_x), .wr_en(wr_en_x)); " << endl
+os << " 	 " << endl
+	 os << "<B_ROM_NAME> rom_b(.clk(clk), .addr(addr_b), .z(b_out)); " << endl
+os << " 	 " << endl
+	 os << "mac #(T) mac_1(.clk(clk), .reset(reset), .a(w_out), .b(x_out), .c(b_out), .accum_src(accum_src), .clear_acc(clear_acc), .en(en), .en_pp(en_pp), .f(f_out)); " << endl
+os << " 	 " << endl
+	 os << "//Relu block " << endl
+	 os << "always_comb begin " << endl
+		 os << "if(f_out<0) " << endl
+			 os << "data_out=0; " << endl
+		 os << "else " << endl
+			 os << "data_out=f_out; " << endl
+	 os << "end " << endl
+os << " 	 " << endl
+ os << "endmodule " << endl
+os << "  " << endl
+ os << "//Memory module " << endl
+ os << "module memory(clk, data_in, data_out, addr, wr_en); " << endl
+os << "     " << endl
+    os << "parameter WIDTH=16, SIZE=64, LOGSIZE=6; " << endl
+    os << "input [WIDTH-1:0] data_in; " << endl
+    os << "output logic [WIDTH-1:0] data_out; " << endl
+    os << "input [LOGSIZE-1:0]      addr; " << endl
+    os << "input                    clk, wr_en; " << endl
+os << "     " << endl
+    os << "logic signed [SIZE-1:0][WIDTH-1:0] mem; " << endl
+os << "     " << endl
+    os << "always_ff @(posedge clk) begin " << endl
+       os << "data_out <= mem[addr]; " << endl
+	   os << "if (wr_en) " << endl
+	     os << "mem[addr] <= data_in; " << endl
+    os << "end " << endl
+ os << "endmodule " << endl
+os << "  " << endl
+ os << "// MAC module " << endl
+ os << "module mac(clk, reset, a, b, c, clear_acc, accum_src, en, en_pp, f); " << endl
+    os << "parameter T=<VALUE_OF_T>;	 " << endl
+    os << "input                      clk, reset, clear_acc, accum_src, en, en_pp; " << endl
+    os << "input signed [T-1:0]         a, b, c; " << endl
+    os << "output logic signed [T-1:0] f; " << endl
+os << "  " << endl
+    os << "logic signed [T-1:0]        mulOut, ppOut, macOut; " << endl
+os << "  " << endl
+os << "  " << endl
+    os << "// Combinational multiplication and addition with a multiplexer " << endl
+    os << "always_comb begin " << endl
+   	   os << "mulOut=a*b; " << endl
+   	   os << "if(accum_src==1) " << endl
+   	  	 os << "macOut = f + c; " << endl
+   	   os << "else	 " << endl
+      	 os << "macOut = f + ppOut; " << endl
+    os << "end " << endl
+os << "  " << endl
+    os << "// Control Output " << endl
+    os << "always_ff @(posedge clk) begin " << endl
+       os << "if (reset == 1 || clear_acc==1) begin " << endl
+      	  os << "f<=0; " << endl
+      	  os << "ppOut<=0; " << endl
+       os << "end " << endl
+os << "        " << endl
+       os << "//Add pipeline FF to reduce critical path length " << endl
+       os << "if(en_pp==1) " << endl
+         os << "ppOut<=mulOut;  " << endl
+os << "          " << endl
+       os << "//Send to output only if enable is set " << endl
+       os << "if(en==1 && en_pp==1) begin " << endl
+      	 os << "f<=macOut; " << endl
+       os << "end " << endl
+    os << "end " << endl
+os << "     " << endl
+ os << "endmodule " << endl
